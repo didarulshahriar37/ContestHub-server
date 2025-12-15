@@ -5,8 +5,25 @@ const { MongoClient, ServerApiVersion } = require('mongodb');
 const app = express()
 const port = process.env.PORT || 3002;
 
+const admin = require("firebase-admin");
+
+const serviceAccount = require("./contest-hub-firebase-adminsdk.json");
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+
 app.use(cors());
 app.use(express.json());
+
+const verifyFBToken = (req, res, next) => {
+  const token = req.headers.authorization;
+
+  if (!token) {
+    return res.status(401).send({ message: 'unauthorized access' })
+  }
+  next();
+}
 
 const uri = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASS}@cluster0.spgu1hn.mongodb.net/?appName=Cluster0`;
 
@@ -29,20 +46,7 @@ async function run() {
     const db = client.db("contest_hub_db");
     const usersCollection = db.collection("users");
 
-    // Users collection
-    app.post("/users", async (req, res) => {
-      const newUser = req.body;
-      const email = req.body.email;
-      const query = { email: email };
-      const existingUser = await usersCollection.findOne(query);
-      if (existingUser) {
-        res.send({ message: 'User already Exists.' })
-      }
-      else {
-        const result = await usersCollection.insertOne(newUser);
-        res.send(result);
-      }
-    })
+    
 
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");

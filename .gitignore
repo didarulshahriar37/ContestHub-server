@@ -1,3 +1,4 @@
 node_modules
 .env
 .vercel
+contest-hub-firebase-adminsdk.json
