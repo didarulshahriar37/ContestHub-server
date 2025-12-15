@@ -16,13 +16,22 @@ admin.initializeApp({
 app.use(cors());
 app.use(express.json());
 
-const verifyFBToken = (req, res, next) => {
+const verifyFBToken = async (req, res, next) => {
   const token = req.headers.authorization;
 
   if (!token) {
     return res.status(401).send({ message: 'unauthorized access' })
   }
-  next();
+
+  try {
+    const idToken = token.split(' ')[1];
+    const decoded = await admin.auth().verifyIdToken(idToken);
+    req.decoded_email = decoded.email;
+    next();
+  }
+  catch (err) {
+    return res.status(401).send({ message: 'unauthorized access' })
+  }
 }
 
 const uri = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASS}@cluster0.spgu1hn.mongodb.net/?appName=Cluster0`;
@@ -46,7 +55,24 @@ async function run() {
     const db = client.db("contest_hub_db");
     const usersCollection = db.collection("users");
 
-    
+    // Users Related APIs
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+      user.role = "user";
+      user.createdAt = new Date();
+      const email = user.email;
+
+      const userExists = await usersCollection.findOne({ email });
+
+      if(userExists){
+        return res.send({message: 'user exists'});
+      }
+
+      const result = await usersCollection.insertOne(user);
+      res.send(result);
+    })
+
+
 
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
