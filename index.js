@@ -52,8 +52,10 @@ async function run() {
   try {
     await client.connect();
 
+    // Collections
     const db = client.db("contest_hub_db");
     const usersCollection = db.collection("users");
+    const contestsCollection = db.collection("contests");
 
     const verifyAdmin = async (req, res, next) => {
 
@@ -112,6 +114,13 @@ async function run() {
         }
       }
       const result = await usersCollection.updateOne(query, updatedDoc);
+      res.send(result);
+    })
+
+    // Contests related APIs
+    app.get('/popular-contests', async(req, res) => {
+      const cursor = contestsCollection.find().sort({participants_count: -1}).limit(6);
+      const result = await cursor.toArray();
       res.send(result);
     })
 
