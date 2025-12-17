@@ -133,7 +133,7 @@ async function run() {
     })
 
     app.get('/manage-contests', async (req, res) => {
-      const cursor = contestsCollection.find().sort({ createdAt: -1 });
+      const cursor = contestsCollection.find().sort({ created_at: 1 });
       const result = await cursor.toArray();
       res.send(result);
     })
@@ -150,6 +150,13 @@ async function run() {
       const result = await contestsCollection.updateOne(query, updatedDoc);
       res.send(result);
     })
+
+    app.delete('/manage-contests/:id', verifyFBToken, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await contestsCollection.deleteOne(query);
+      res.send(result);
+    });
 
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
