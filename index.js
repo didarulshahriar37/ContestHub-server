@@ -118,9 +118,36 @@ async function run() {
     })
 
     // Contests related APIs
-    app.get('/popular-contests', async(req, res) => {
-      const cursor = contestsCollection.find().sort({participants_count: -1}).limit(6);
+    app.get('/popular-contests', async (req, res) => {
+      const query = { approval_status: "approved" };
+      const cursor = contestsCollection.find(query).sort({ participants_count: -1 }).limit(6);
       const result = await cursor.toArray();
+      res.send(result);
+    })
+
+    app.get('/all-contests', async (req, res) => {
+      const query = { approval_status: "approved" };
+      const cursor = contestsCollection.find(query);
+      const result = await cursor.toArray();
+      res.send(result);
+    })
+
+    app.get('/manage-contests', async (req, res) => {
+      const cursor = contestsCollection.find().sort({ createdAt: -1 });
+      const result = await cursor.toArray();
+      res.send(result);
+    })
+
+    app.patch('/manage-contests/:id/approval_status', verifyFBToken, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const approval_status = req.body;
+      const query = { _id: new ObjectId(id) }
+      const updatedDoc = {
+        $set: {
+          approval_status: approval_status.approval_status
+        }
+      }
+      const result = await contestsCollection.updateOne(query, updatedDoc);
       res.send(result);
     })
 
