@@ -132,38 +132,10 @@ async function run() {
       res.send(result);
     })
 
+    // Admin contest management
     app.get('/manage-contests', async (req, res) => {
-      const cursor = contestsCollection.find().sort({ created_at: 1 });
+      const cursor = contestsCollection.find().sort({ created_at: -1 });
       const result = await cursor.toArray();
-      res.send(result);
-    })
-
-    app.get('/my-contests/',verifyFBToken, async(req, res) => {
-      const email = req.decoded_email;
-      const query = {creator_email: email};
-      const cursor = contestsCollection.find(query);
-      const result = await cursor.toArray();
-      res.send(result)
-    })
-
-    app.post('/manage-contests', async (req, res) => {
-      const contest = req.body;
-      const contestData = {
-        contest_name: contest.contest_name,
-        image: contest.imageURL,
-        participants_count: contest.participants_count || 0,
-        contest_description: contest.contest_description,
-        task_details: contest.task_details,
-        entry_price: Number(contest.entry_price),
-        prize_money: Number(contest.prize_money),
-        created_at: new Date().toISOString(),
-        deadline: new Date(contest.deadline).toISOString(),
-        contest_type: contest.contest_type,
-        creator_name: contest.creator_name,
-        creator_email: contest.creator_email,
-        approval_status: "pending"
-      };
-      const result = await contestsCollection.insertOne(contestData);
       res.send(result);
     })
 
@@ -181,6 +153,66 @@ async function run() {
     })
 
     app.delete('/manage-contests/:id', verifyFBToken, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await contestsCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    // Creator contest management
+    app.get('/my-contests/', verifyFBToken, async (req, res) => {
+      const email = req.decoded_email;
+      const query = { creator_email: email };
+      const cursor = contestsCollection.find(query).sort({ created_at: -1 });
+      const result = await cursor.toArray();
+      res.send(result)
+    })
+
+    app.post('/my-contests', async (req, res) => {
+      const contest = req.body;
+      const contestData = {
+        contest_name: contest.contest_name,
+        image: contest.image,
+        participants_count: contest.participants_count || 0,
+        contest_description: contest.contest_description,
+        task_details: contest.task_details,
+        entry_price: Number(contest.entry_price),
+        prize_money: Number(contest.prize_money),
+        created_at: new Date(),
+        deadline: new Date(contest.deadline),
+        contest_type: contest.contest_type,
+        creator_name: contest.creator_name,
+        creator_email: contest.creator_email,
+        approval_status: "pending"
+      };
+      const result = await contestsCollection.insertOne(contestData);
+      res.send(result);
+    })
+
+    app.patch('/my-contests/:id', verifyFBToken, async (req, res) => {
+      const id = req.params.id;
+      const email = req.decoded_email;
+      const contest = req.body;
+      const query = {
+        _id: new ObjectId(id),
+        creator_email: email
+      };
+      const updatedContest = {
+        $set: {
+          contest_name: contest.contest_name,
+          image: contest.imageURL,
+          contest_description: contest.contest_description,
+          task_details: contest.task_details,
+          entry_price: Number(contest.entry_price),
+          prize_money: Number(contest.prize_money),
+          contest_type: contest.contest_type
+        }
+      }
+      const result = await contestsCollection.updateOne(query, updatedContest);
+      res.send(result);
+    })
+
+    app.delete('/my-contests/:id', verifyFBToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await contestsCollection.deleteOne(query);
